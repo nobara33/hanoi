@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ハノイの塔</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
+    h1 { margin: 20px; }
+    .towers { display: flex; justify-content: center; gap: 40px; margin: 40px 0; }
+    .tower {
+      width: 120px; height: 200px;
+      background: #ddd; border: 2px solid #999;
+      position: relative;
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .disk {
+      height: 20px;
+      margin: 2px 0;
+      border-radius: 4px;
+      color: white;
+      text-align: center;
+      line-height: 20px;
+      user-select: none;
+    }
+    .selected { outline: 3px solid red; }
+    #controls { margin-top: 20px; }
+    #message {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.2em;
+      color: #333;
+      transition: background-color 0.5s ease;
+      user-select: none;
+    }
+    #message.special {
+      color: red;
+      font-size: 1.8em;
+      animation: flashBg 1s ease forwards;
+    }
+    @keyframes flashBg {
+      0% { background-color: transparent; }
+      50% { background-color: gold; }
+      100% { background-color: transparent; }
+    }
+    #difficulty-select {
+      margin-bottom: 10px;
+      font-size: 1.1em;
+      user-select: none;
+    }
+    #difficulty-select label {
+      margin-right: 8px;
+    }
+    button {
+      font-size: 1em;
+      padding: 6px 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>ハノイの塔</h1>
+
+  <div id="difficulty-select">
+    <label for="level">難易度:</label>
+    <select id="level" aria-label="難易度選択">
+      <option value="3">初級（3枚）</option>
+      <option value="4" selected>中級（4枚）</option>
+      <option value="5">上級（5枚）</option>
+    </select>
+  </div>
+
+  <div class="towers">
+    <div id="tower0" class="tower" tabindex="0" aria-label="塔0"></div>
+    <div id="tower1" class="tower" tabindex="0" aria-label="塔1"></div>
+    <div id="tower2" class="tower" tabindex="0" aria-label="塔2"></div>
+  </div>
+
+  <div id="controls">
+    <button id="retryBtn" type="button">リトライ</button>
+    <div>ステップ数: <span id="stepCount">0</span></div>
+    <div id="goalStep">目指せ15回でクリア！</div>
+  </div>
+
+  <div id="message" role="alert" aria-live="polite"></div>
+
+  <script>
+    let numDisks = 4; // 初期は中級4枚
+    const colors = ['#4caf50', '#2196f3', '#ff9800', '#e91e63', '#9c27b0', '#009688', '#795548'];
+    let towers = [[], [], []];
+    let selectedTower = null;
+    let stepCount = 0;
+
+    function getGoalSteps(n) {
+      return Math.pow(2, n) - 1;
+    }
+
+    function updateGoalStepText() {
+      const goal = getGoalSteps(numDisks);
+      document.getElementById('goalStep').textContent = `目指せ${goal}回でクリア！`;
+    }
+
+    function init() {
+      towers = [[], [], []];
+      for (let i = numDisks; i >= 1; i--) {
+        towers[0].push(i);
+      }
+      selectedTower = null;
+      stepCount = 0;
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = '';
+      messageEl.classList.remove('special');
+      document.getElementById('stepCount').textContent = stepCount;
+      updateGoalStepText();
+      render();
+    }
+
+    function render() {
+      for (let i = 0; i < 3; i++) {
+        const towerEl = document.getElementById(`tower${i}`);
+        towerEl.innerHTML = '';
+        for (let d of towers[i]) {
+          const disk = document.createElement('div');
+          disk.className = 'disk';
+          disk.style.width = (d * 20 + 20) + 'px';
+          disk.style.background = colors[d - 1] || 'gray';
+          disk.textContent = d;
+          towerEl.appendChild(disk);
+        }
+        towerEl.classList.toggle('selected', selectedTower === i);
+        towerEl.onclick = () => handleClick(i);
+      }
+      document.getElementById('stepCount').textContent = stepCount;
+    }
+
+    function handleClick(i) {
+      if (selectedTower === null) {
+        if (towers[i].length > 0) {
+          selectedTower = i;
+        }
+      } else {
+        if (selectedTower === i) {
+          selectedTower = null;
+        } else {
+          const from = towers[selectedTower];
+          const to = towers[i];
+          const disk = from[from.length - 1];
+          if (to.length === 0 || disk < to[to.length - 1]) {
+            to.push(from.pop());
+            stepCount++;
+            selectedTower = null;
+            checkClear();
+          }
+        }
+      }
+      render();
+    }
+
+    function checkClear() {
+      if (towers[2].length === numDisks) {
+        const goal = getGoalSteps(numDisks);
+        const messageEl = document.getElementById('message');
+        if (stepCount === goal) {
+          messageEl.classList.add('special');
+          messageEl.textContent =
+            `🎉✨最短クリアおめでとう！✨🎉`;
+        } else {
+          messageEl.classList.remove('special');
+          messageEl.textContent =
+            `おめでとう！すべて移動できました！`;
+        }
+      }
+    }
+
+    document.getElementById('retryBtn').onclick = () => {
+      init();
+    };
+
+    document.getElementById('level').onchange = (e) => {
+      numDisks = parseInt(e.target.value, 10);
+      init();
+    };
+
+    init();
+  </script>
+</body>
+</html>
